@@ -7,7 +7,7 @@ def readme():
 
 
 setuptools.setup(name='stocknews',
-                 version='0.5.2',
+                 version='0.5.3',
                  description='PoC for scraping Yahoo News with sentiment analysis',
                  url='http://github.com/primus852/stock-news.git',
                  author='Torsten Wolter',

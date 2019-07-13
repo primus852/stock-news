@@ -43,9 +43,6 @@ def read_rss(stocks, use_csv=True, file='news.csv'):
                      'sentiment_title']
         )
 
-    """Start Size of DF"""
-    start_size = df.shape[0]
-
     """Download VADER"""
     try:
         nltk.data.find('vader_lexicon')
@@ -83,11 +80,6 @@ def read_rss(stocks, use_csv=True, file='news.csv'):
         """Save to CSV"""
         if use_csv:
             df.to_csv(DATA_FOLDER + '/' + file, index=False)
-
-    end_size = df.shape[0]
-    added = end_size - start_size
-
-    print('Total News: %i (%i added last round)' % (end_size, added))
 
     return df
 
@@ -151,7 +143,7 @@ def update_stock_values(stock_symbol, file='news.csv'):
         }
 
         _temp_key = '%s_%s' % (stock_symbol, date_check.strftime("%Y-%m-%d"))
-        if _temp_key in _temp_check or row['change'] != '0':
+        if _temp_key in _temp_check or (row['change'] != '0' and row['change'] != 0):
             continue
 
         r = requests.get(url=TRADING_URL, params=params)
