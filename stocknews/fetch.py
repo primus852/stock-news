@@ -99,10 +99,12 @@ def update_stock_values(stock_symbol, file='news.csv'):
     :param file:
     :return:
     """
-	
-	if 'WORLDTRADING_KEY' not in os.environ:
-		print('Please set "WORLDTRADING_KEY" in your environment variables: Get an API key at https://www.worldtradingdata.com/')
-		exit()
+
+    if 'WORLDTRADING_KEY' not in os.environ:
+        print(
+            'Please set "WORLDTRADING_KEY" in your environment variables.'
+            ' Get an API key at https://www.worldtradingdata.com/')
+        exit()
 
     """Read CSV"""
     df = pandas.read_csv(DATA_FOLDER + '/' + file, header=0)
