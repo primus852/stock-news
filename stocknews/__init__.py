@@ -110,7 +110,7 @@ class StockNews:
         try:
             nltk.data.find('vader_lexicon')
         except LookupError:
-            nltk.download('vader_lexicon')
+            nltk.download('vader_lexicon', quiet=True)
 
         for stock in self.stocks:
 

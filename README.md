@@ -46,6 +46,11 @@ This returns a pandas DataFrame and saves it to `data/data.csv` by default (see 
 * add more tests
 
 ## Changes
+
+### 0.9.6
+* Suppress ntlk download messages
+* renamed `test.py`
+
 ### 0.9.5
 * "Initial Release"
 
