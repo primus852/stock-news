@@ -4,80 +4,100 @@ import pandas
 import feedparser
 import requests
 import nltk
+from numpy import median
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 
 class StockNews:
-
     YAHOO_URL = 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=%s&region=US&lang=en-US'
     TRADING_URL = 'https://api.worldtradingdata.com/api/v1/history'
     DATA_FOLDER = 'data'
 
-    def __init__(self, stocks, file='data.csv', use_csv=True, closing_hour=20, closing_minute=0, wt_key=None):
+    def __init__(self, stocks, news_file='news.csv', summary_file='data.csv', save_news=True, closing_hour=20,
+                 closing_minute=0, wt_key=None):
         """
         :param stocks: A list of Stock Symbols such as "AAPL" for Apple, NFLX for Netflix etc.
-        :param file: Filename of saved data
-        :param use_csv: Persist the data to csv or not
+        :param news_file: Filename of saved news data
+        :param summary_file: Filename of saved summary (Stock by day)
+        :param save_news: Persist the data to csv or not
         :param closing_hour: attach news for the next trading day after this
         :param closing_minute: attach news for the next trading day after this
         :param wt_key: API Key from https://www.worldtradingdata.com/
         """
 
         self.stocks = stocks
-        self.file = file
-        self.use_csv = use_csv
+        self.news_file = news_file
+        self.summary_file = summary_file
+        self.save_news = save_news
         self.closing_hour = closing_hour
         self.closing_minute = closing_minute
         self.wt_key = wt_key
 
-        if self.use_csv:
-            self._touch()
+        if self.save_news:
+            self._touch('news')
 
-    def _touch(self):
+        self._touch('summary')
+
+    def _touch(self, df_type):
         """
         Check if folder/file exists, if not, create it
+        :param df_type:
         :return:
         """
+
+        if df_type == 'news':
+            header = \
+                'guid;' \
+                'stock;' \
+                'title;' \
+                'summary;' \
+                'published;' \
+                'p_date;' \
+                'sentiment_summary;' \
+                'sentiment_title'
+            file = self.news_file
+        elif df_type == 'summary':
+            header = \
+                'id;' \
+                'stock;' \
+                'news_dt;' \
+                'check_day;' \
+                'open;' \
+                'close;' \
+                'high;' \
+                'low;' \
+                'volume;' \
+                'change;' \
+                'sentiment_summary_avg;' \
+                'sentiment_summary_med;' \
+                'sentiment_title_avg;' \
+                'sentiment_title_med'
+            file = self.summary_file
+        else:
+            raise Exception('Unknown type')
 
         if not os.path.exists(self.DATA_FOLDER):
             os.makedirs(self.DATA_FOLDER)
 
-        path = '%s/%s' % (self.DATA_FOLDER, self.file)
+        path = '%s/%s' % (self.DATA_FOLDER, file)
 
         if not os.path.isfile(path):
-            with open(path, 'a') as file:
+            with open(path, 'a') as f:
                 os.utime(path, None)
-                file.write(
-                    'guid,'
-                    'stock,'
-                    'change,'
-                    'open,'
-                    'close,'
-                    'title,'
-                    'summary,'
-                    'published,'
-                    'p_date,'
-                    'sentiment_summary,'
-                    'sentiment_title'
-                )
+                f.write(header)
 
     def read_rss(self):
         """
-        :param stocks: list of stocks to check from yahoo
         :return: pandas.DataFrame
         """
 
         """Create the file"""
-        if self.use_csv:
-            self._touch()
-            df = pandas.read_csv(self.DATA_FOLDER + '/' + self.file, header=0)
+        if self.save_news:
+            df = pandas.read_csv(self.DATA_FOLDER + '/' + self.news_file, header=0, sep=';')
         else:
             df = pandas.DataFrame(
                 columns=['guid',
                          'stock',
-                         'change',
-                         'open',
-                         'close',
                          'title',
                          'summary',
                          'published',
@@ -109,11 +129,6 @@ class StockNews:
                 _summary = sia.polarity_scores(entry.summary)['compound']
                 _title = sia.polarity_scores(entry.title)['compound']
 
-                """Set changed value during day. These will be updated later"""
-                _change = 0
-                _open = 0
-                _close = 0
-
                 """Parse the date"""
                 p_date = '%s_%s' % (
                     stock, dt.datetime.strptime(entry.published, '%a, %d %b %Y %H:%M:%S +0000').strftime("%Y-%m-%d"))
@@ -122,9 +137,6 @@ class StockNews:
                 row = [
                     entry.guid,
                     stock,
-                    _change,
-                    _open,
-                    _close,
                     entry.title,
                     entry.summary,
                     entry.published,
@@ -135,27 +147,26 @@ class StockNews:
                 df.loc[len(df)] = row
 
             """Save to CSV"""
-            if self.use_csv:
-                df.to_csv(self.DATA_FOLDER + '/' + self.file, index=False)
+            if self.save_news:
+                df.to_csv(self.DATA_FOLDER + '/' + self.news_file, index=False, sep=';')
 
         return df
 
-    def update_stock(self, stock_symbol):
+    def summarize(self):
         """
-        Update all the rows if use_csv=True
-        :param stock_symbol: Single Stock Symbol
+        Summarize news by day and get the Stock Value
         :return: pandas.DataFrame
         """
-
-        if not self.use_csv:
-            raise Exception('Can only be used with when "use_csv" is set to True')
 
         if self.wt_key is None:
             raise Exception('Please set the WorldTradingData API Key. '
                             'Get your key here: https://www.worldtradingdata.com')
 
-        """Read CSV"""
-        df = pandas.read_csv(self.DATA_FOLDER + '/' + self.file, header=0)
+        """Read News CSV"""
+        df = self.read_rss()
+
+        """Read Summary CSV"""
+        df_sum = pandas.read_csv(self.DATA_FOLDER + '/' + self.summary_file, header=0, sep=';')
 
         """Temp list for checked stock/data"""
         _temp_check = []
@@ -163,41 +174,63 @@ class StockNews:
         for index, row in df.iterrows():
 
             """Parse the Date from CSV"""
-            date_time_check = dt.datetime.strptime(row['published'], '%a, %d %b %Y %H:%M:%S +0000')
+            news_date = dt.datetime.strptime(row['published'], '%a, %d %b %Y %H:%M:%S +0000')
+            check_date = self._get_check_date(news_date)
 
-            """Adjust the closing hours (if after, the news has no influence of the news date)"""
-            date_time_close = dt.datetime(date_time_check.year, date_time_check.month, date_time_check.day,
-                                          self.closing_hour, self.closing_minute, 0)
+            """Create ID for summary"""
+            _id = '%s_%s' % (row['stock'], news_date.strftime("%Y-%m-%d"))
 
-            """If it was after opening hours, select next day"""
-            date_check = date_time_check
-            if date_time_check > date_time_close:
-                date_check = date_time_check + dt.timedelta(days=1)
+            """Find id (SYMBOL_DATE) if exists, skip it"""
+            sum_id = df_sum.loc[df_sum['id'] == _id]
+            if len(sum_id) > 0:
+                continue
 
-            """If Date to check is saturday, add 2 days"""
-            if date_check.weekday() == 5:
-                date_check += dt.timedelta(days=2)
-            elif date_check.weekday() == 6:
-                date_check += dt.timedelta(days=1)
+            """Get all News where p_date is the sum_id"""
+            _df = df[df['p_date'] == _id]
 
-            """Get Yesterday"""
-            yesterday = dt.datetime.now()
-            yesterday -= dt.timedelta(days=1)
+            """Make Median and AVG"""
+            avg_summary, med_summary = self._median_avg('sentiment_summary', _df)
+            avg_title, med_title = self._median_avg('sentiment_title', _df)
 
-            """If the Date to check is later than yesterday, skip it, it will be done another day"""
-            if date_check.strftime("%Y-%m-%d") > yesterday.strftime("%Y-%m-%d"):
+            """Add new entry to DF"""
+            _row = [
+                _id,
+                row['stock'],
+                news_date.strftime("%Y-%m-%d %H:%M:%S"),
+                check_date.strftime("%Y-%m-%d"),
+                0,
+                0,
+                0,
+                0,
+                0,
+                'UNCHECKED',
+                avg_summary,
+                med_summary,
+                avg_title,
+                med_title
+            ]
+            df_sum.loc[len(df_sum)] = _row
+
+        """Update all 'UNCHECKED' columns"""
+        _df_uc = df_sum[df_sum['change'] == 'UNCHECKED']
+
+        """Go through all unchecked"""
+        for index_uc, row_uc in _df_uc.iterrows():
+
+            """If the check_day is today, skip it"""
+            _date = dt.datetime.strptime(row_uc['check_day'], '%Y-%m-%d')
+            c_date = dt.datetime(_date.year, _date.month, _date.day, 23, 59, 59)
+            today = dt.datetime.now()
+
+            if c_date >= today:
                 continue
 
             params = {
-                'symbol': stock_symbol,
-                'date_from': date_check.strftime("%Y-%m-%d"),
-                'date_to': date_check.strftime("%Y-%m-%d"),
+                'symbol': row_uc['stock'],
+                'date_from': row_uc['check_day'],
+                'date_to': row_uc['check_day'],
                 'api_token': self.wt_key
             }
-
-            _temp_key = '%s_%s' % (stock_symbol, date_check.strftime("%Y-%m-%d"))
-            if _temp_key in _temp_check or (row['change'] != '0' and row['change'] != 0):
-                continue
 
             r = requests.get(url=self.TRADING_URL, params=params)
 
@@ -207,20 +240,63 @@ class StockNews:
             """Extract open and close"""
             if 'history' in data.keys():
 
-                _temp_check.append(_temp_key)
-
-                _open = float(data['history'][date_check.strftime("%Y-%m-%d")]['open'])
-                _close = float(data['history'][date_check.strftime("%Y-%m-%d")]['close'])
+                _open = float(data['history'][row_uc['check_day']]['open'])
+                _close = float(data['history'][row_uc['check_day']]['close'])
+                _high = float(data['history'][row_uc['check_day']]['high'])
+                _low = float(data['history'][row_uc['check_day']]['low'])
+                _volume = float(data['history'][row_uc['check_day']]['volume'])
 
                 if _open >= _close:
                     change = 'loss'
                 else:
                     change = 'win'
 
-                df.loc[df['p_date'] == _temp_key, 'change'] = change
-                df.loc[df['p_date'] == _temp_key, 'open'] = _open
-                df.loc[df['p_date'] == _temp_key, 'close'] = _close
+                df_sum.loc[df_sum['id'] == row_uc['id'], 'change'] = change
+                df_sum.loc[df_sum['id'] == row_uc['id'], 'open'] = _open
+                df_sum.loc[df_sum['id'] == row_uc['id'], 'close'] = _close
+                df_sum.loc[df_sum['id'] == row_uc['id'], 'high'] = _high
+                df_sum.loc[df_sum['id'] == row_uc['id'], 'low'] = _low
+                df_sum.loc[df_sum['id'] == row_uc['id'], 'volume'] = _volume
 
-        df.to_csv(self.DATA_FOLDER + '/' + self.file, index=False)
+        df_sum.to_csv(self.DATA_FOLDER + '/' + self.summary_file, index=False, sep=';')
 
-        return df
+        return df_sum
+
+    @staticmethod
+    def _median_avg(column, t_df):
+        """
+        Return AVG and Median of a column
+        :param column: Column Name
+        :param t_df: pandas.DataFrame
+        :return:
+        """
+
+        avg = t_df[column].sum() / len(t_df)
+        med = median(t_df[column])
+
+        return avg, med
+
+    def _get_check_date(self, dt_check):
+        """
+        Check which day needs to be checked for a news date
+        :param dt_check: datetime
+        :return: dt.datetime
+        """
+
+        """Get closing date"""
+        dt_close = dt.datetime(dt_check.year, dt_check.month, dt_check.day, self.closing_hour, self.closing_minute, 0)
+
+        """If the CheckDate is later than CloseDate, add one day"""
+        if dt_check > dt_close:
+            dt_check += dt.timedelta(days=1)
+
+        """If the CheckDate is a Saturday, add 2 days"""
+        if dt_check.weekday() == 5:
+            dt_check += dt.timedelta(days=2)
+
+        """If the CheckDate is a Sunday, add 1 day"""
+        if dt_check.weekday() == 6:
+            dt_check += dt.timedelta(days=1)
+
+        """return date to check"""
+        return dt_check

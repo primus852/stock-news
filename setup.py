@@ -2,12 +2,12 @@ import setuptools
 
 
 def readme():
-    with open('README.rst') as f:
+    with open('README.md') as f:
         return f.read()
 
 
 setuptools.setup(name='stocknews',
-                 version='0.9.0',
+                 version='0.9.5',
                  description='PoC for scraping Yahoo News with sentiment analysis',
                  url='http://github.com/primus852/stock-news.git',
                  author='Torsten Wolter',
@@ -28,7 +28,8 @@ setuptools.setup(name='stocknews',
                      'pandas',
                      'feedparser',
                      'nltk',
-                     'requests'
+                     'requests',
+                     'numpy'
                  ],
                  zip_safe=False,
                  test_suite='nose.collector',

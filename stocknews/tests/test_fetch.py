@@ -1,9 +1,10 @@
 from unittest import TestCase
-import os
+import pandas as pd
+from stocknews import StockNews
 
 
 class TestReadRss(TestCase):
-    def test_folder_exists(self):
-        cur_dir = os.path.abspath(os.path.dirname(__file__))
-        data_dir = os.path.abspath(cur_dir + "/../data/")
-        self.assertTrue(os.path.exists(data_dir))
+    def test_read_rss(self):
+        sn = StockNews(['AAPL'])
+        df = sn.read_rss()
+        self.assertTrue(isinstance(df, pd.DataFrame))
