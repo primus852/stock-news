@@ -155,7 +155,7 @@ class StockNews:
     def summarize(self):
         """
         Summarize news by day and get the Stock Value
-        :return: pandas.DataFrame
+        :return: pandas.DataFrame, <int> number of requests made
         """
 
         if self.wt_key is None:
@@ -168,8 +168,8 @@ class StockNews:
         """Read Summary CSV"""
         df_sum = pandas.read_csv(self.DATA_FOLDER + '/' + self.summary_file, header=0, sep=';')
 
-        """Temp list for checked stock/data"""
-        _temp_check = []
+        """Count Requests"""
+        r_count = 0
 
         for index, row in df.iterrows():
 
@@ -234,6 +234,9 @@ class StockNews:
 
             r = requests.get(url=self.TRADING_URL, params=params)
 
+            """We made a request"""
+            r_count += 1
+
             """extracting data in json format"""
             data = r.json()
 
@@ -260,7 +263,7 @@ class StockNews:
 
         df_sum.to_csv(self.DATA_FOLDER + '/' + self.summary_file, index=False, sep=';')
 
-        return df_sum
+        return df_sum, r_count
 
     @staticmethod
     def _median_avg(column, t_df):

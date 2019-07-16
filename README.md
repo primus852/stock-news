@@ -47,6 +47,9 @@ This returns a pandas DataFrame and saves it to `data/data.csv` by default (see 
 
 ## Changes
 
+### 0.9.7
+* tried to fix too many requests, added a counter for made requests to keep track
+
 ### 0.9.6
 * Suppress ntlk download messages
 * renamed `test.py`
