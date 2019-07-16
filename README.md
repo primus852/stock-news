@@ -42,6 +42,7 @@ This returns a pandas DataFrame and saves it to `data/data.csv` by default (see 
 `python setup.py test`
 
 ## ToDo
+* Make multi request to worldtradingdata.com API
 * add more news sources
 * add more tests
 

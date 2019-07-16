@@ -215,6 +215,9 @@ class StockNews:
         """Update all 'UNCHECKED' columns"""
         _df_uc = df_sum[df_sum['change'] == 'UNCHECKED']
 
+        """Get all Stocks to Check"""
+        _to_check = _df_uc.stock.unique()
+
         """Go through all unchecked"""
         for index_uc, row_uc in _df_uc.iterrows():
 
