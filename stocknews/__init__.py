@@ -11,7 +11,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 class StockNews:
     YAHOO_URL = 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=%s&region=US&lang=en-US'
     TRADING_URL = 'https://api.worldtradingdata.com/api/v1/history'
-    DATA_FOLDER = 'data'
+    DATA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
     def __init__(self, stocks, news_file='news.csv', summary_file='data.csv', save_news=True, closing_hour=20,
                  closing_minute=0, wt_key=None):
