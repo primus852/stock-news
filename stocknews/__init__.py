@@ -79,7 +79,7 @@ class StockNews:
         if not os.path.exists(self.DATA_FOLDER):
             os.makedirs(self.DATA_FOLDER)
 
-        path = '%s/%s' % (self.DATA_FOLDER, file)
+        path = os.path.join(self.DATA_FOLDER, file)
 
         if not os.path.isfile(path):
             with open(path, 'a') as f:
@@ -93,7 +93,9 @@ class StockNews:
 
         """Create the file"""
         if self.save_news:
-            df = pandas.read_csv(self.DATA_FOLDER + '/' + self.news_file, header=0, sep=';')
+            df = pandas.read_csv(os.path.join(self.DATA_FOLDER, self.news_file), header=0, sep=';')
+            print(os.path.join(self.DATA_FOLDER, self.news_file))
+            exit()
         else:
             df = pandas.DataFrame(
                 columns=['guid',
@@ -148,7 +150,7 @@ class StockNews:
 
             """Save to CSV"""
             if self.save_news:
-                df.to_csv(self.DATA_FOLDER + '/' + self.news_file, index=False, sep=';')
+                df.to_csv(os.path.join(self.DATA_FOLDER, self.news_file), index=False, sep=';')
 
         return df
 
@@ -166,7 +168,7 @@ class StockNews:
         df = self.read_rss()
 
         """Read Summary CSV"""
-        df_sum = pandas.read_csv(self.DATA_FOLDER + '/' + self.summary_file, header=0, sep=';')
+        df_sum = pandas.read_csv(os.path.join(self.DATA_FOLDER, self.summary_file), header=0, sep=';')
 
         """Count Requests"""
         r_count = 0
@@ -261,7 +263,7 @@ class StockNews:
                 df_sum.loc[df_sum['id'] == row_uc['id'], 'low'] = _low
                 df_sum.loc[df_sum['id'] == row_uc['id'], 'volume'] = _volume
 
-        df_sum.to_csv(self.DATA_FOLDER + '/' + self.summary_file, index=False, sep=';')
+        df_sum.to_csv(os.path.join(self.DATA_FOLDER, self.summary_file), index=False, sep=';')
 
         return df_sum, r_count
 
