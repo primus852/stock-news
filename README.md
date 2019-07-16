@@ -47,6 +47,12 @@ This returns a pandas DataFrame and saves it to `data/data.csv` by default (see 
 
 ## Changes
 
+### 0.9.11
+* Fixed another pathing issue...
+
+### 0.9.10
+* removed the  `exit()` *rolleyes*
+
 ### 0.9.9
 * path issues fixed. For real now...
 

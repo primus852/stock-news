@@ -4,6 +4,7 @@ import pandas
 import feedparser
 import requests
 import nltk
+import sys
 from numpy import median
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
@@ -11,7 +12,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 class StockNews:
     YAHOO_URL = 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=%s&region=US&lang=en-US'
     TRADING_URL = 'https://api.worldtradingdata.com/api/v1/history'
-    DATA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    DATA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'data')
 
     def __init__(self, stocks, news_file='news.csv', summary_file='data.csv', save_news=True, closing_hour=20,
                  closing_minute=0, wt_key=None):
@@ -94,8 +95,6 @@ class StockNews:
         """Create the file"""
         if self.save_news:
             df = pandas.read_csv(os.path.join(self.DATA_FOLDER, self.news_file), header=0, sep=';')
-            print(os.path.join(self.DATA_FOLDER, self.news_file))
-            exit()
         else:
             df = pandas.DataFrame(
                 columns=['guid',

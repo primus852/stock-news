@@ -195,4 +195,4 @@ fabric.properties
 .idea/modules.xml
 .idea/stock-news.iml
 .idea/vcs.xml
-/stocknews/data/
+/data/
